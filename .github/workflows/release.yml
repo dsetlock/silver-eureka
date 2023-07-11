@@ -34,3 +34,18 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+#Kick off workflow in post-production environment
+##Signer01 env set
+##Signer02 env set
+
+
+
+#Set first environment approver
+
+#Set second environment approver
+
+#Execute python tool for signing
+
+
+##Copy to storage account
+
