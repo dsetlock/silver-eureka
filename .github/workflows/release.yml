@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Create tarball
-        run: tar -czvf "${{ github.repository }}.tar.gz" .
+        run: tar -cxvf "${{ github.repository }}.tar.gz" .
 
   signerOne: #first signer
     needs: build
