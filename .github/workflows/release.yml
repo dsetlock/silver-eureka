@@ -21,7 +21,7 @@ jobs:
           REPO_NAME=$(basename ${{ github.repository }})
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV       
       - name: Package files into tarball
-        run: tar -czvf $REPO_NAME.tar.gz .
+        run: tar -czvf $GITHUB_ENV.tar.gz .
 
 
   signerOne: #first signer
