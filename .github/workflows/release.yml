@@ -15,8 +15,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Create tarball
-        run: tar -cvf app.tar.gz .
+      - name: Get the repository name #Get repo name for tarball
+        id: repo-name
+        run: echo "::set-output name=REPO_NAME::$(basename ${{ github.repository }})" #Set repo name for tarball
+      - name: Package files into tarball
+        run: tar -czvf ${{ steps.repo-name.outputs.REPO_NAME }}.tar.gz .
 
   signerOne: #first signer
     needs: build
@@ -24,15 +27,13 @@ jobs:
     environment:
       name: post-production
     steps:
-#     - name: Login to Azure
-#       run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
       - name: Install Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x' # Replace with the version of Python you want to use
       - name: Run Python script
         run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID_1 }} -p ${{ secrets.AZURE_CLIENT_SECRET_1 }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az login --service-principal -u ${{ secrets.SIGNER_ONE_ID }} -p ${{ secrets.SIGNER_ONE_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           python myscript.py
 
   signerTwo:
@@ -41,15 +42,9 @@ jobs:
     environment:
       name: post-production
     steps:
-#     - name: Login to Azure
-#       run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID_2 }} -p ${{ secrets.AZURE_CLIENT_SECRET_2 }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-      - name: Install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x' # Replace with the version of Python you want to use
       - name: Run Python script
         run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az login --service-principal -u ${{ secrets.SIGNER_TWO_ID }} -p ${{ secrets.SIGNER_TWO_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           python myscript.py
 
   deploy:
@@ -68,9 +63,6 @@ jobs:
             az storage blob upload --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} --account-key ${{ secrets.AZURE_STORAGE_KEY }} --container-name ${{ secrets.AZURE_STORAGE_CONTAINER }} --file "${{ github.repository }}.tar.gz" --name "${{ github.repository }}.tar.gz"
 #Kick off workflow in post-production environment
 
-##Signer01 env set
-
-##Signer02 env set
 
 
 
