@@ -15,11 +15,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get the repository name #Get repo name for tarball
+      - name: Get the repository name
         id: repo-name
-        run: echo "::set-output name=REPO_NAME::$(basename ${{ github.repository }})" #Set repo name for tarball
+        run: |
+          REPO_NAME=$(basename ${{ github.repository }})
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV       
       - name: Package files into tarball
-        run: tar -czvf ${{ steps.repo-name.outputs.REPO_NAME }}.tar.gz .
+        run: tar -czvf $REPO_NAME.tar.gz .
+
 
   signerOne: #first signer
     needs: build
