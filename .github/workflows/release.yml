@@ -7,19 +7,53 @@ on:
   push:
     branches:
       - main
-
+#Start workflow jobs
 jobs:
-  build:
+  build: #Creates initial tar ball
     runs-on: ubuntu-latest
-    environment: post-production
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Create tarball
         run: tar -czvf "${{ github.repository }}.tar.gz" .
 
-  deploy:
+  signerOne: #first signer
     needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: post-production
+    steps:
+#     - name: Login to Azure
+#       run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x' # Replace with the version of Python you want to use
+      - name: Run Python script
+        run: |
+          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          python myscript.py
+
+  signerTwo:
+    needs: signerOne
+    runs-on: ubuntu-latest
+    environment:
+      name: post-production
+    steps:
+#     - name: Login to Azure
+#       run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x' # Replace with the version of Python you want to use
+      - name: Run Python script
+        run: |
+          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          python myscript.py
+
+  deploy:
+    needs: signerTwo
     runs-on: ubuntu-latest
     environment:
       name: post-production
