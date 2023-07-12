@@ -4,38 +4,38 @@ name: CI
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    environment: post-production
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create tarball
+        run: tar -czvf "${{ github.repository }}.tar.gz" .
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: post-production
+    steps:
+      - name: Login to Azure
+        run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Upload tarball to storage account
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.0.72
+          inlineScript: |
+            az storage blob upload --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} --account-key ${{ secrets.AZURE_STORAGE_KEY }} --container-name ${{ secrets.AZURE_STORAGE_CONTAINER }} --file "${{ github.repository }}.tar.gz" --name "${{ github.repository }}.tar.gz"
 #Kick off workflow in post-production environment
+
 ##Signer01 env set
+
 ##Signer02 env set
 
 
@@ -43,6 +43,8 @@ jobs:
 #Set first environment approver
 
 #Set second environment approver
+
+#make TAR ball?
 
 #Execute python tool for signing
 
