@@ -9,7 +9,7 @@ on:
       - main
 #Start workflow jobs
 jobs:
-  build: #Creates initial tar ball
+  build: #Creates initial tar ball, update name to include release prefix, and use prefix within python app to apply on upload
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -18,14 +18,28 @@ jobs:
       - name: Get the repository name
         id: repo-name
         run: |
-          REPO_NAME=$(basename ${{ github.repository }})
+          REPO_NAME=$(basename ${{ github.repository }}) 
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV       
       - name: Package files into tarball
-        run: tar -czvf $GITHUB_ENV.tar.gz .
+        run: tar -czvf $REPO_NAME.tar.gz .
 
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: post-production
+    steps:
+      - name: Login to Azure
+        run: az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Upload tarball to storage account
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.0.72
+          inlineScript: |
+                  az storage blob upload --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} --account-key ${{ secrets.AZURE_STORAGE_KEY }} --container-name "$GITHUB_ENV.tar.gz" --name "$GITHUB_ENV.tar.gz"
 
   signerOne: #first signer
-    needs: build
+    needs: upload
     runs-on: ubuntu-latest
     environment:
       name: post-production
@@ -38,7 +52,7 @@ jobs:
         run: |
           az login --service-principal -u ${{ secrets.SIGNER_ONE_ID }} -p ${{ secrets.SIGNER_ONE_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           python myscript.py
-
+#az logout
   signerTwo:
     needs: signerOne
     runs-on: ubuntu-latest
@@ -49,7 +63,8 @@ jobs:
         run: |
           az login --service-principal -u ${{ secrets.SIGNER_TWO_ID }} -p ${{ secrets.SIGNER_TWO_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           python myscript.py
-
+          az logout --username ${{ secrets.SIGNER_TWO_ID }}
+#az logout
   deploy:
     needs: signerTwo
     runs-on: ubuntu-latest
@@ -63,20 +78,4 @@ jobs:
         with:
           azcliversion: 2.0.72
           inlineScript: |
-            az storage blob upload --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} --account-key ${{ secrets.AZURE_STORAGE_KEY }} --container-name ${{ secrets.AZURE_STORAGE_CONTAINER }} --file "${{ github.repository }}.tar.gz" --name "${{ github.repository }}.tar.gz"
-#Kick off workflow in post-production environment
-
-
-
-
-#Set first environment approver
-
-#Set second environment approver
-
-#make TAR ball?
-
-#Execute python tool for signing
-
-
-##Copy to storage account
-
+            az storage blob upload --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} --account-key ${{ secrets.AZURE_STORAGE_KEY }} --container-name "$GITHUB_ENV.tar.gz" --name "$GITHUB_ENV.tar.gz"
